@@ -4,7 +4,7 @@ on:
   workflow_call: {}
 
 env:
-  GIT_ORG: wso2-cicd
+  GIT_ORG: kariyasinghe-cell
   GIT_CICD_REPO: wso2-pipeline
   GIT_CI_BRANCH: main
   GIT_CD_BRANCH: dev
