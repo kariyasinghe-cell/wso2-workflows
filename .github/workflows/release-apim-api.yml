@@ -1,0 +1,176 @@
+name: Release WSO2 APIM API Repository
+
+on:
+  workflow_call: {}
+
+env:
+  GIT_ORG: wso2-cicd
+  GIT_CICD_REPO: wso2-pipeline
+  GIT_CI_BRANCH: main
+  GIT_CD_BRANCH: dev
+  # INITIAL_VERSION: v1.0
+  # MAX_MINOR_VERSION: 9
+  GIT_BOT_USERNAME: ${{ secrets.WSO2_GIT_BOT_USERNAME }}
+  GIT_BOT_EMAIL: ${{ secrets.WSO2_GIT_BOT_EMAIL }}
+  GIT_BOT_PAT: ${{ secrets.WSO2_GIT_BOT_PAT }}
+       
+jobs:
+  release_apim_api:
+    name: Release WSO2 APIM API
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 5
+
+      - name: Extract repository name
+        run: echo "CURRENT_REPO_NAME=$(echo $GITHUB_REPOSITORY | cut -d '/' -f 2)" >> $GITHUB_ENV
+
+      - name: Fetch PR metadata
+        uses: 8BitJonny/gh-get-current-pr@2.1.3
+        id: pr
+
+      - name: Detect Changed API Versions
+        id: detect_versions
+        run: |
+          changed_apim_versions=($(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep 'apim/' | cut -f 2 -d '/' | grep -v 'assembly' | grep -v 'pom.xml' | uniq))
+          # Join array elements with a delimiter (comma)
+          changedApiVersionsStr=$(IFS=,; echo "${changed_apim_versions[*]}")
+          echo "changed_apim_versions=${changedApiVersionsStr}" >> $GITHUB_OUTPUT
+          echo "changed_apim_versions: ${changedApiVersionsStr}"
+      - name: Zip src folder under repo name
+        run: |
+          mkdir -p $CURRENT_REPO_NAME
+          mv apim $CURRENT_REPO_NAME/
+          zip -r $CURRENT_REPO_NAME.zip  $CURRENT_REPO_NAME/apim
+      - name: Create GitHub Release
+        id: release
+        run: |
+          echo "${{ env.GIT_BOT_PAT }}" | gh auth login --with-token
+
+          # Get the current latest release tag
+          currentVersion=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq '.tagName' || true)
+
+          if [ -z "$currentVersion" ]; then
+            newVersion="r1"
+          else
+            # Strip the 'r' prefix and increment the number
+            currentNumber=$(echo "$currentVersion" | sed 's/^r//')
+            newNumber=$((currentNumber + 1))
+            newVersion="r$newNumber"
+          fi
+
+          echo "New version: $newVersion"
+
+          release_notes="Release notes for version $newVersion
+          - Pull Request Title: ${{steps.pr.outputs.pr_title}}
+          - Pull Request: ${{steps.pr.outputs.pr_url}}
+          - Pull Request Merged At: ${{steps.pr.outputs.pr_merged_at}}
+          "
+
+          # Create the GitHub release
+          gh release create "$newVersion" --title "$CURRENT_REPO_NAME - $newVersion" --notes "$release_notes"
+
+          # Upload the artifact
+          gh release upload "$newVersion" "$CURRENT_REPO_NAME.zip"
+
+          # Output the new version
+          echo "NEW_VERSION=$newVersion" >> "$GITHUB_OUTPUT"
+
+      - name: Update Central CD Config
+        run: |
+          changedApiVersionsStr="${{ steps.detect_versions.outputs.changed_apim_versions }}"
+
+          # Split the string back into an array
+          IFS=',' read -ra changed_apim_versions <<< "$changedApiVersionsStr"
+
+          echo "Changed API versions: ${changed_apim_versions[@]}"
+          
+          mkdir apim-cd
+          cd apim-cd
+
+          git config --global user.email "${{ env.GIT_BOT_EMAIL }}"
+          git config --global user.name "${{env.GIT_BOT_USERNAME}}"
+          git clone https://${{env.GIT_BOT_USERNAME}}:${{ env.GIT_BOT_PAT }}@github.com/${{env.GIT_ORG}}/${{env.GIT_CICD_REPO}} --branch ${{env.GIT_CD_BRANCH}} --single-branch
+          cd ${{env.GIT_CICD_REPO}}
+
+          for changed_apim_version in "${changed_apim_versions[@]}"; do
+            echo "Processing version: $changed_apim_version"
+            releaseFilePath="apim/apis/$CURRENT_REPO_NAME/$changed_apim_version/release.json"
+            releaseFile=$releaseFilePath
+
+            newVersion=${{ steps.release.outputs.NEW_VERSION }}
+            prUrl="${{ steps.pr.outputs.pr_url }}"
+            prTitle="${{ steps.pr.outputs.pr_title }}"
+            prMergedAt="${{ steps.pr.outputs.pr_merged_at }}"
+
+            if [ -f "$releaseFilePath" ]; then
+              echo "Found release file: $releaseFilePath"
+
+              # Read the JSON file and update the details
+              updatedReleaseFile=$(jq '
+                  .releaseVersion = "'"$newVersion"'" |
+                  .pullRequest.url = "'"$prUrl"'" |
+                  .pullRequest.title = "'"$prTitle"'" |
+                  .pullRequest.mergedAt = "'"$prMergedAt"'"
+                ' "$releaseFile")
+    
+              echo "$updatedReleaseFile" > "$releaseFile"
+              git add "$releaseFilePath"
+              git commit -m "[CD] [Dev] [APIM-API] [$CURRENT_REPO_NAME-$changed_apim_version] [$newVersion]"
+              git push origin ${{env.GIT_CD_BRANCH}}
+            else
+              echo "Release file not found: $releaseFilePath"
+
+              branch_name="cd-dev-$CURRENT_REPO_NAME-$changed_apim_version"
+              git checkout -b "$branch_name"
+              git pull
+
+              mkdir -p "$(dirname "$releaseFilePath")"
+          cat <<EOF > "$releaseFilePath"
+          {
+            "artifactRepository": "${{ github.repository }}",
+            "releaseVersion": "$newVersion",
+            "artifacts": [
+              "$CURRENT_REPO_NAME.zip"
+            ],
+            "pullRequest": {
+              "url": "$prUrl",
+              "title": "$prTitle",
+              "mergedAt": "$prMergedAt"
+            }
+          }
+          EOF
+
+              commitMsg="[CD] [Dev] [APIM-API] [$CURRENT_REPO_NAME-$changed_apim_version] [$newVersion]"
+              prBody="A new API and version have been added to the CI/CD pipeline: $CURRENT_REPO_NAME-$changed_apim_version (Release: $newVersion)
+              - This PR was automatically generated to register the new API version in the centralized CD configuration.
+              - Merging this PR will approve the addition and trigger deployment to the Dev environment.
+              Please review and take action accordingly.
+              "
+
+              git add "$releaseFilePath"
+              git commit -m "$commitMsg"
+              git push -f origin "$branch_name"
+
+              echo "$GIT_BOT_PAT" | gh auth login --with-token
+              prExists=$(gh pr list --base ${{env.GIT_CD_BRANCH}} --head $branch_name --state OPEN)
+              echo "PR exists: $prExists"
+
+              if [ -z "$prExists" ]; then
+                echo "PR does not exist. Creating a new PR."
+                gh pr create --base ${{env.GIT_CD_BRANCH}} --head $branch_name --title "$commitMsg" --body "$prBody"
+              else
+                echo "PR already exists. Updating the PR title and body."
+                # Extract the PR number using awk
+                prNumber=$(echo "$prExists" | awk '{print $1}')
+                echo "Existing PR number: $prNumber"
+                echo "Temporarily closing the PR due to a bug in gh pr edit - https://github.com/cli/cli/issues/8358"
+                gh pr close $prNumber
+                # gh pr edit $prNumber --title "$commitMsg" --body "$prBody"
+                gh pr create --base ${{env.GIT_CD_BRANCH}} --head $branch_name --title "$commitMsg" --body "$prBody"
+              fi
+            fi
+          done
