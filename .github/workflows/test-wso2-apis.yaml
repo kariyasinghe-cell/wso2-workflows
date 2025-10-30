@@ -18,23 +18,25 @@ jobs:
       - name: Get APIM folder names
         id: get_folders
         run: |
+          # Move to repo root (after checkout)
+          cd $GITHUB_WORKSPACE
+      
           # Convert excludeFolders input to array
           IFS=',' read -r -a EXCLUDE <<< "${{ github.event.inputs.excludeFolders }}"
           echo "Excluding folders: ${EXCLUDE[@]}"
-
+      
           # Initialize array
           APIM_FOLDERS=()
-
+      
           # Loop through all directories inside apim
           for dir in $(ls -1 apim); do
             if [[ ! " ${EXCLUDE[@]} " =~ " ${dir} " ]]; then
               APIM_FOLDERS+=("$dir")
             fi
           done
-
-          # Print array
+      
           echo "APIM folders to process: ${APIM_FOLDERS[@]}"
-
+      
           # Set as output for other steps
           echo "folders=${APIM_FOLDERS[*]}" >> $GITHUB_OUTPUT
 
