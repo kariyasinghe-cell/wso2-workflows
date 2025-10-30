@@ -25,17 +25,18 @@ jobs:
       - name: Determine folders to process
         id: get_folders
         run: |
-          cd $GITHUB_WORKSPACE
+          set -e
+          cd "$GITHUB_WORKSPACE"
           APIM_PATH="$GITHUB_WORKSPACE/apim"
 
-          # Detect trigger type
+          # Determine input source
           if [ "$GITHUB_EVENT_NAME" == "workflow_call" ]; then
             INPUT="${{ inputs.includeFolders }}"
           else
             INPUT="${{ github.event.inputs.includeFolders }}"
           fi
 
-          # Handle input
+          # If input is empty, include all folders
           if [ -z "$INPUT" ]; then
             echo "No input given — including all folders under apim/"
             FOLDERS=$(ls -1 "$APIM_PATH")
@@ -47,7 +48,7 @@ jobs:
             INVALID_FOLDERS=()
 
             for folder in "${ARR[@]}"; do
-              folder=$(echo "$folder" | xargs)
+              folder=$(echo "$folder" | xargs)  # trim spaces
               if [ -d "$APIM_PATH/$folder" ]; then
                 VALID_FOLDERS+=("$folder")
               else
@@ -64,6 +65,7 @@ jobs:
               exit 1
             fi
 
+            # Join valid folders into a space-separated string
             FOLDERS="${VALID_FOLDERS[*]}"
           fi
 
@@ -74,7 +76,7 @@ jobs:
             echo "folders<<EOF"
             echo "$FOLDERS"
             echo "EOF"
-          } >> $GITHUB_OUTPUT
+          } >> "$GITHUB_OUTPUT"
 
       - name: Use APIM folders
         run: |
