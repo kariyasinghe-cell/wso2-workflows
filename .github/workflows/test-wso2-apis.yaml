@@ -1,0 +1,44 @@
+name: Process APIM Folders
+
+on:
+  workflow_dispatch:
+    inputs:
+      excludeFolders:
+        description: 'Comma-separated list of APIM folders to exclude'
+        required: false
+        default: ''
+
+jobs:
+  process-apim:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Get APIM folder names
+        id: get_folders
+        run: |
+          # Convert excludeFolders input to array
+          IFS=',' read -r -a EXCLUDE <<< "${{ github.event.inputs.excludeFolders }}"
+          echo "Excluding folders: ${EXCLUDE[@]}"
+
+          # Initialize array
+          APIM_FOLDERS=()
+
+          # Loop through all directories inside apim
+          for dir in $(ls -1 apim); do
+            if [[ ! " ${EXCLUDE[@]} " =~ " ${dir} " ]]; then
+              APIM_FOLDERS+=("$dir")
+            fi
+          done
+
+          # Print array
+          echo "APIM folders to process: ${APIM_FOLDERS[@]}"
+
+          # Set as output for other steps
+          echo "folders=${APIM_FOLDERS[*]}" >> $GITHUB_OUTPUT
+
+      - name: Use APIM folders
+        run: |
+          echo "Folders passed from previous step:"
+          echo "${{ steps.get_folders.outputs.folders }}"
