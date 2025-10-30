@@ -22,48 +22,54 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Get APIM folder names
+      - name: Determine folders to process
         id: get_folders
         run: |
           cd $GITHUB_WORKSPACE
-          INPUT="${{ github.event.inputs.includeFolders }}"
           APIM_PATH="$GITHUB_WORKSPACE/apim"
-      
-          # If user did not provide input, include all folders
+
+          # Detect trigger type
+          if [ "$GITHUB_EVENT_NAME" == "workflow_call" ]; then
+            INPUT="${{ inputs.includeFolders }}"
+          else
+            INPUT="${{ github.event.inputs.includeFolders }}"
+          fi
+
+          # Handle input
           if [ -z "$INPUT" ]; then
             echo "No input given — including all folders under apim/"
             FOLDERS=$(ls -1 "$APIM_PATH")
           else
             echo "User provided input — using only: $INPUT"
             IFS=',' read -r -a ARR <<< "$INPUT"
-      
+
             VALID_FOLDERS=()
             INVALID_FOLDERS=()
-      
+
             for folder in "${ARR[@]}"; do
-              folder=$(echo "$folder" | xargs)  # trim spaces
+              folder=$(echo "$folder" | xargs)
               if [ -d "$APIM_PATH/$folder" ]; then
                 VALID_FOLDERS+=("$folder")
               else
                 INVALID_FOLDERS+=("$folder")
               fi
             done
-      
+
             if [ ${#INVALID_FOLDERS[@]} -ne 0 ]; then
-              echo "⚠️  Warning: These folders do not exist under 'apim/' and will be ignored: ${INVALID_FOLDERS[*]}"
+              echo "⚠️ Warning: These folders do not exist under 'apim/' and will be ignored: ${INVALID_FOLDERS[*]}"
             fi
-      
+
             if [ ${#VALID_FOLDERS[@]} -eq 0 ]; then
               echo "❌ No valid folders found from input!"
               exit 1
             fi
-      
+
             FOLDERS="${VALID_FOLDERS[*]}"
           fi
-      
+
           echo "✅ APIM folders to process: $FOLDERS"
-      
-          # Output safely
+
+          # Output for subsequent steps
           {
             echo "folders<<EOF"
             echo "$FOLDERS"
