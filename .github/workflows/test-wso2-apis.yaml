@@ -3,8 +3,8 @@ name: Process APIM Folders
 on:
   workflow_dispatch:
     inputs:
-      excludeFolders:
-        description: 'Comma-separated list of APIM folders to exclude'
+      includeFolders:
+        description: 'Comma-separated list of APIM folders to include (leave empty to include all)'
         required: false
         default: ''
 
@@ -18,29 +18,26 @@ jobs:
       - name: Get APIM folder names
         id: get_folders
         run: |
-          # Move to repo root (after checkout)
           cd $GITHUB_WORKSPACE
-      
-          # Convert excludeFolders input to array
-          IFS=',' read -r -a EXCLUDE <<< "${{ github.event.inputs.excludeFolders }}"
-          echo "Excluding folders: ${EXCLUDE[@]}"
-      
-          # Initialize array
-          APIM_FOLDERS=()
-      
-          # Loop through all directories inside apim
-          for dir in $(ls -1 apim); do
-            if [[ ! " ${EXCLUDE[@]} " =~ " ${dir} " ]]; then
-              APIM_FOLDERS+=("$dir")
-            fi
-          done
-      
-          echo "APIM folders to process: ${APIM_FOLDERS[@]}"
-      
+
+          INPUT="${{ github.event.inputs.includeFolders }}"
+          APIM_PATH="$GITHUB_WORKSPACE/apim"
+
+          if [ -z "$INPUT" ]; then
+            echo "No input given — including all folders under apim/"
+            FOLDERS=$(ls -1 "$APIM_PATH")
+          else
+            echo "User provided input — using only: $INPUT"
+            IFS=',' read -r -a ARR <<< "$INPUT"
+            FOLDERS="${ARR[*]}"
+          fi
+
+          echo "APIM folders to process: $FOLDERS"
+
           # Set as output for other steps
-          echo "folders=${APIM_FOLDERS[*]}" >> $GITHUB_OUTPUT
+          echo "folders=${FOLDERS}" >> $GITHUB_OUTPUT
 
       - name: Use APIM folders
         run: |
-          echo "Folders passed from previous step:"
+          echo "Folders from previous step:"
           echo "${{ steps.get_folders.outputs.folders }}"
