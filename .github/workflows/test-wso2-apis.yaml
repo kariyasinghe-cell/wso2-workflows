@@ -5,8 +5,7 @@ on:
     inputs:
       includeFolders:
         description: 'Comma-separated list of APIM folders to include'
-        required: false
-        default: ''
+        required: true
         type: string
         
   workflow_dispatch:
