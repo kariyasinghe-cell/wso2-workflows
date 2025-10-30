@@ -19,29 +19,47 @@ jobs:
         id: get_folders
         run: |
           cd $GITHUB_WORKSPACE
-      
           INPUT="${{ github.event.inputs.includeFolders }}"
           APIM_PATH="$GITHUB_WORKSPACE/apim"
       
+          # If user did not provide input, include all folders
           if [ -z "$INPUT" ]; then
             echo "No input given — including all folders under apim/"
             FOLDERS=$(ls -1 "$APIM_PATH")
           else
             echo "User provided input — using only: $INPUT"
             IFS=',' read -r -a ARR <<< "$INPUT"
-            FOLDERS="${ARR[*]}"
+      
+            VALID_FOLDERS=()
+            INVALID_FOLDERS=()
+      
+            for folder in "${ARR[@]}"; do
+              folder=$(echo "$folder" | xargs)  # trim spaces
+              if [ -d "$APIM_PATH/$folder" ]; then
+                VALID_FOLDERS+=("$folder")
+              else
+                INVALID_FOLDERS+=("$folder")
+              fi
+            done
+      
+            if [ ${#INVALID_FOLDERS[@]} -ne 0 ]; then
+              echo "⚠️  Warning: These folders do not exist under 'apim/' and will be ignored: ${INVALID_FOLDERS[*]}"
+            fi
+      
+            if [ ${#VALID_FOLDERS[@]} -eq 0 ]; then
+              echo "❌ No valid folders found from input!"
+              exit 1
+            fi
+      
+            FOLDERS="${VALID_FOLDERS[*]}"
           fi
       
-          echo "APIM folders to process:"
-          echo "$FOLDERS"
+          echo "✅ APIM folders to process: $FOLDERS"
       
-          # Convert to space-separated single line
-          FOLDERS_SINGLE_LINE=$(echo "$FOLDERS" | tr '\n' ' ')
-      
-          # Write output safely (multi-line supported)
+          # Output safely
           {
             echo "folders<<EOF"
-            echo "$FOLDERS_SINGLE_LINE"
+            echo "$FOLDERS"
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
