@@ -19,10 +19,10 @@ jobs:
         id: get_folders
         run: |
           cd $GITHUB_WORKSPACE
-
+      
           INPUT="${{ github.event.inputs.includeFolders }}"
           APIM_PATH="$GITHUB_WORKSPACE/apim"
-
+      
           if [ -z "$INPUT" ]; then
             echo "No input given — including all folders under apim/"
             FOLDERS=$(ls -1 "$APIM_PATH")
@@ -31,11 +31,19 @@ jobs:
             IFS=',' read -r -a ARR <<< "$INPUT"
             FOLDERS="${ARR[*]}"
           fi
-
-          echo "APIM folders to process: $FOLDERS"
-
-          # Set as output for other steps
-          echo "folders=${FOLDERS}" >> $GITHUB_OUTPUT
+      
+          echo "APIM folders to process:"
+          echo "$FOLDERS"
+      
+          # Convert to space-separated single line
+          FOLDERS_SINGLE_LINE=$(echo "$FOLDERS" | tr '\n' ' ')
+      
+          # Write output safely (multi-line supported)
+          {
+            echo "folders<<EOF"
+            echo "$FOLDERS_SINGLE_LINE"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Use APIM folders
         run: |
