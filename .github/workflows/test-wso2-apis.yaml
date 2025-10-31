@@ -31,15 +31,6 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           APIM_PATH="$GITHUB_WORKSPACE/apim"
 
-          # Determine input source based on triggeredBy flag
-          # if [ "${{ inputs.triggeredBy }}" == "true" ]; then
-          #   # Called from child workflow
-          #   INPUT="${{ inputs.includeAPIs }}"
-          # else
-          #   # Manual workflow_dispatch run
-          #   INPUT="${{ github.event.inputs.includeAPIs }}"
-          # fi
-
           INPUT="${{ inputs.includeAPIs }}"
 
           # If input is empty, include all folders
