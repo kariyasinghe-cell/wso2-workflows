@@ -32,19 +32,21 @@ jobs:
           APIM_PATH="$GITHUB_WORKSPACE/apim"
 
           # Determine input source based on triggeredBy flag
-          if [ "${{ inputs.triggeredBy }}" == "true" ]; then
-            # Called from child workflow
-            INPUT="${{ inputs.includeAPIs }}"
-          else
-            # Manual workflow_dispatch run
-            INPUT="${{ github.event.inputs.includeAPIs }}"
-          fi
+          # if [ "${{ inputs.triggeredBy }}" == "true" ]; then
+          #   # Called from child workflow
+          #   INPUT="${{ inputs.includeAPIs }}"
+          # else
+          #   # Manual workflow_dispatch run
+          #   INPUT="${{ github.event.inputs.includeAPIs }}"
+          # fi
+
+          INPUT="${{ inputs.includeAPIs }}"
 
           # If input is empty, include all folders
-          if [ -z "$INPUT" ] && [ "${{ inputs.triggeredBy }}" == "true" ]; then
+          if [ -z "$INPUT" ] && [ "${{ inputs.triggeredBy }}" == "developer" ]; then
             echo "❌ No input given from child workflow — stopping pipeline!"
             exit 1
-          elif [ -z "$INPUT" ]; then
+          elif [ -z "$INPUT" ] && [ "${{ inputs.triggeredBy }}" == "apim-team" ]; then
             echo "No input given — including all APIs under apim/"
             FOLDERS=$(ls -1 "$APIM_PATH")
           else
