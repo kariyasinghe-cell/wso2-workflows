@@ -42,11 +42,9 @@ jobs:
           if [ "${{ inputs.fromChild }}" == "true" ]; then
             # Called from child workflow
             INPUT="${{ inputs.includeAPIs }}"
-            echo "Called from child workflow"
           else
             # Manual workflow_dispatch run
             INPUT="${{ github.event.inputs.includeAPIs }}"
-            echo "Manual workflow_dispatch run"
           fi
 
           # If input is empty, include all folders
