@@ -25,6 +25,11 @@ jobs:
           repository: kariyasinghe-cell/wso2-workflows
           ref: ${{ github.ref }}
 
+      - name: troubleshoot
+        id: troubleshoot
+        run: |
+          echo "$GITHUB_EVENT_NAME"
+
       - name: Determine folders to process
         id: get_folders
         run: |
