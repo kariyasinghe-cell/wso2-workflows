@@ -3,7 +3,7 @@ name: Process APIM Folders
 on:
   workflow_call:
     inputs:
-      includeFolders:
+      includeAPIs:
         description: 'Comma-separated list of APIM folders to include'
         required: true
         type: string
@@ -16,7 +16,7 @@ on:
         
   workflow_dispatch:
     inputs:
-      includeFolders:
+      includeAPIs:
         description: 'Comma-separated list of APIM folders to include (leave empty to include all)'
         required: false
         default: ''
@@ -41,11 +41,11 @@ jobs:
           # Determine input source based on fromChild flag
           if [ "${{ inputs.fromChild }}" == "true" ]; then
             # Called from child workflow
-            INPUT="${{ inputs.includeFolders }}"
+            INPUT="${{ inputs.includeAPIs }}"
             echo "Called from child workflow"
           else
             # Manual workflow_dispatch run
-            INPUT="${{ github.event.inputs.includeFolders }}"
+            INPUT="${{ github.event.inputs.includeAPIs }}"
             echo "Manual workflow_dispatch run"
           fi
 
