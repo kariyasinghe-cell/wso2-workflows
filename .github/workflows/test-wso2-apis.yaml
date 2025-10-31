@@ -21,6 +21,9 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          repository: ${{ github.workflow_ref && github.workflow_ref != '' && github.workflow_ref || github.repository }}
+          ref: ${{ github.ref }}
 
       - name: Determine folders to process
         id: get_folders
