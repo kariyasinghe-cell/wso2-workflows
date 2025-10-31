@@ -22,7 +22,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.workflow_ref && github.workflow_ref != '' && github.workflow_ref || github.repository }}
+          repository: kariyasinghe-cell/wso2-workflows
           ref: ${{ github.ref }}
 
       - name: Determine folders to process
