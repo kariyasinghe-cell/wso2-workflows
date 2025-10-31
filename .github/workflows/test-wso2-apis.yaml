@@ -55,7 +55,10 @@ jobs:
           fi
 
           # If input is empty, include all folders
-          if [ -z "$INPUT" ]; then
+          if [ -z "$INPUT" ] && [ "${{ inputs.fromChild }}" == "true" ]; then
+            echo "❌ No input given from parent workflow — stopping pipeline!"
+            exit 1
+          elif [ -z "$INPUT" ]; then
             echo "No input given — including all folders under apim/"
             FOLDERS=$(ls -1 "$APIM_PATH")
           else
