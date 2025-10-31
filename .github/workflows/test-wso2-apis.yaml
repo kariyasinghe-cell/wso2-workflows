@@ -49,10 +49,10 @@ jobs:
 
           # If input is empty, include all folders
           if [ -z "$INPUT" ] && [ "${{ inputs.fromChild }}" == "true" ]; then
-            echo "❌ No input given from parent workflow — stopping pipeline!"
+            echo "❌ No input given from child workflow — stopping pipeline!"
             exit 1
           elif [ -z "$INPUT" ]; then
-            echo "No input given — including all folders under apim/"
+            echo "No input given — including all APIs under apim/"
             FOLDERS=$(ls -1 "$APIM_PATH")
           else
             echo "User provided input — using only: $INPUT"
@@ -71,11 +71,11 @@ jobs:
             done
 
             if [ ${#INVALID_FOLDERS[@]} -ne 0 ]; then
-              echo "⚠️ Warning: These folders do not exist under 'apim/' and will be ignored: ${INVALID_FOLDERS[*]}"
+              echo "⚠️ Warning: These APIs do not exist under 'apim/' and will be ignored: ${INVALID_FOLDERS[*]}"
             fi
 
             if [ ${#VALID_FOLDERS[@]} -eq 0 ]; then
-              echo "❌ No valid folders found from input!"
+              echo "❌ No valid APIs found from input!"
               exit 1
             fi
 
@@ -83,7 +83,7 @@ jobs:
             FOLDERS="${VALID_FOLDERS[*]}"
           fi
 
-          echo "✅ APIM folders to process: $FOLDERS"
+          echo "✅ APIs to process: $FOLDERS"
 
           # Output for subsequent steps
           {
