@@ -50,7 +50,7 @@ jobs:
             echo "No input given — including all APIs under apim/"
             FOLDERS=$(ls -1 "$APIM_PATH")
           else
-            echo "User provided input — using only: $INPUT"
+            echo "User provided input : $INPUT"
             IFS=',' read -r -a ARR <<< "$INPUT"
 
             VALID_FOLDERS=()
