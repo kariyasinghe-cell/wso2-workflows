@@ -13,13 +13,6 @@ on:
         required: false
         default: "false"
         type: string
-        
-  workflow_dispatch:
-    inputs:
-      includeAPIs:
-        description: 'Comma-separated list of APIM APIs to include (leave empty to include all)'
-        required: false
-        default: ''
 
 jobs:
   process-apim:
