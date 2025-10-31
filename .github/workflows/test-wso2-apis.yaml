@@ -8,7 +8,7 @@ on:
         required: true
         type: string
         
-      fromChild:
+      triggeredBy:
         description: "Flag to indicate this is from child workflow"
         required: false
         default: "false"
@@ -31,8 +31,8 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           APIM_PATH="$GITHUB_WORKSPACE/apim"
 
-          # Determine input source based on fromChild flag
-          if [ "${{ inputs.fromChild }}" == "true" ]; then
+          # Determine input source based on triggeredBy flag
+          if [ "${{ inputs.triggeredBy }}" == "true" ]; then
             # Called from child workflow
             INPUT="${{ inputs.includeAPIs }}"
           else
@@ -41,7 +41,7 @@ jobs:
           fi
 
           # If input is empty, include all folders
-          if [ -z "$INPUT" ] && [ "${{ inputs.fromChild }}" == "true" ]; then
+          if [ -z "$INPUT" ] && [ "${{ inputs.triggeredBy }}" == "true" ]; then
             echo "❌ No input given from child workflow — stopping pipeline!"
             exit 1
           elif [ -z "$INPUT" ]; then
