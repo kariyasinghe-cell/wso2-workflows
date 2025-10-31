@@ -28,7 +28,7 @@ jobs:
       - name: troubleshoot
         id: troubleshoot
         run: |
-          echo "${{ github.event.inputs.includeFolders }}"
+          echo "${{ inputs.includeFolders }}"
 
       - name: Determine folders to process
         id: get_folders
