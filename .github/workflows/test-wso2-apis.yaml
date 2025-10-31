@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       includeAPIs:
-        description: 'Comma-separated list of APIM folders to include'
+        description: 'Comma-separated list of APIM APIs to include'
         required: true
         type: string
         
@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       includeAPIs:
-        description: 'Comma-separated list of APIM folders to include (leave empty to include all)'
+        description: 'Comma-separated list of APIM APIs to include (leave empty to include all)'
         required: false
         default: ''
 
@@ -31,8 +31,8 @@ jobs:
           repository: kariyasinghe-cell/wso2-workflows
           ref: ${{ github.ref }}
 
-      - name: Determine folders to process
-        id: get_folders
+      - name: Determine APIs to process
+        id: get_apis
         run: |
           set -e
           cd "$GITHUB_WORKSPACE"
@@ -97,4 +97,4 @@ jobs:
       - name: Use APIM folders
         run: |
           echo "Folders from previous step:"
-          echo "${{ steps.get_folders.outputs.folders }}"
+          echo "${{ steps.get_apis.outputs.folders }}"
