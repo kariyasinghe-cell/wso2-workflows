@@ -89,10 +89,20 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
+  
       - name: Loop through and print each folder
         run: |
+          # Read output from previous job
           FOLDERS="${{ needs.process-apim.outputs.folders }}"
+          echo "Folders received: '$FOLDERS'"
+  
+          # Only loop if not empty
+          if [ -z "$FOLDERS" ]; then
+            echo "❌ No folders to process!"
+            exit 1
+          fi
+  
+          # Loop through space-separated folders
           for folder in $FOLDERS; do
             echo "🔁 Processing folder: $folder"
           done
