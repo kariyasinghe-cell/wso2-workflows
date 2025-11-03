@@ -17,6 +17,8 @@ on:
 jobs:
   process-apim:
     runs-on: ubuntu-latest
+    outputs:
+      folders: ${{ steps.get_apis.outputs.folders }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
