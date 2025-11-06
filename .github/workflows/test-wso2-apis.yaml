@@ -21,7 +21,7 @@ on:
 
       environment:
         description: "API Deployment Environment"
-        required: true
+        required: false
         default: "Dev"
         type: string
 
