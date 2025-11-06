@@ -119,3 +119,15 @@ jobs:
           for folder in $FOLDERS; do
             echo "🔁 Processing folder: $folder"
           done
+
+  env-tests:
+    runs-on: ubuntu-latest
+    needs: loop-folders
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+  
+      - name: Print the env
+        run: |
+          ENVIRONMENT="${{ inputs.environment }}"
+          echo $ENVIRONMENT
