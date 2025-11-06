@@ -7,6 +7,11 @@ on:
         description: 'Comma-separated list of APIM APIs to include'
         required: true
         type: string
+
+      branch:
+        description: 'The Git branch which use with the enviorenment'
+        required: true
+        type: string
         
       triggeredBy:
         description: "Flag to indicate this is from child workflow"
