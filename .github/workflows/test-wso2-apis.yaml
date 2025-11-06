@@ -19,6 +19,12 @@ on:
         default: "false"
         type: string
 
+      environment:
+        description: "API Deployment Environment"
+        required: false
+        default: "Dev"
+        type: string
+
 jobs:
   process-apim:
     runs-on: ubuntu-latest
