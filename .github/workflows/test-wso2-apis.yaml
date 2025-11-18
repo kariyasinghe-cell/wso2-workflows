@@ -106,33 +106,33 @@ jobs:
           echo "ZIP files from previous step:"
           echo "${{ steps.get_apis.outputs.zip_files }}"
 
-  loop-folders:
+  loop-apis:
     runs-on: ubuntu-latest
     needs: process-apim-zip
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
   
-      - name: Loop through and print each folder
+      - name: Loop through and print each API
         run: |
           # Read output from previous job
-          FOLDERS="${{ needs.process-apim-zip.outputs.folders }}"
-          echo "Folders received: '$FOLDERS'"
+          APIS="${{ needs.process-apim-zip.outputs.zip_files }}"
+          echo "APIS received: '$APIS'"
   
           # Only loop if not empty
-          if [ -z "$FOLDERS" ]; then
-            echo "❌ No folders to process!"
+          if [ -z "$APIS" ]; then
+            echo "❌ No APIS to process!"
             exit 1
           fi
   
-          # Loop through space-separated folders
-          for folder in $FOLDERS; do
-            echo "🔁 Processing folder: $folder"
+          # Loop through space-separated apis
+          for api in $APIS; do
+            echo "🔁 Processing api: $api"
           done
 
   env-tests:
     runs-on: ubuntu-latest
-    needs: loop-folders
+    needs: loop-apis
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
