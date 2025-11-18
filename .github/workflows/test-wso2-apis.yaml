@@ -32,10 +32,10 @@ on:
         type: string
 
 jobs:
-  process-apim:
+  process-apim-zip:
     runs-on: ubuntu-latest
     outputs:
-      folders: ${{ steps.get_apis.outputs.folders }}
+      zip_files: ${{ steps.get_apis.outputs.zip_files }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -43,64 +43,68 @@ jobs:
           repository: kariyasinghe-cell/wso2-workflows
           ref: ${{ inputs.branch }}
 
-      - name: Determine APIs to process
+      - name: Determine ZIP files to process
         id: get_apis
         run: |
           set -e
           cd "$GITHUB_WORKSPACE"
           APIM_PATH="$GITHUB_WORKSPACE/apim"
-
           INPUT="${{ inputs.includeAPIs }}"
 
-          # If input is empty, include all folders
+          # Function to convert API name to zip filename
+          to_zip() {
+            local api_name="$1"
+            echo "${api_name}.zip"
+          }
+
           if [ -z "$INPUT" ] && [ "${{ inputs.triggeredBy }}" == "developer" ]; then
             echo "❌ No input given from child workflow — stopping pipeline!"
             exit 1
           elif [ -z "$INPUT" ] && [ "${{ inputs.triggeredBy }}" == "apim-team" ]; then
-            echo "No input given — including all APIs under apim/"
-            FOLDERS=$(ls -1 "$APIM_PATH")
+            echo "No input given — including all ZIPs under apim/"
+            ZIP_FILES=$(ls -1 "$APIM_PATH"/*.zip 2>/dev/null | xargs -n1 basename)
           else
-            echo "User provided input : $INPUT"
+            echo "User provided input: $INPUT"
             IFS=',' read -r -a ARR <<< "$INPUT"
 
-            VALID_FOLDERS=()
-            INVALID_FOLDERS=()
+            VALID_ZIPS=()
+            INVALID_ZIPS=()
 
-            for folder in "${ARR[@]}"; do
-              folder=$(echo "$folder" | xargs)  # trim spaces
-              if [ -d "$APIM_PATH/$folder" ]; then
-                VALID_FOLDERS+=("$folder")
+            for api in "${ARR[@]}"; do
+              api=$(echo "$api" | xargs)  # trim spaces
+              zip_file=$(to_zip "$api")
+              if [ -f "$APIM_PATH/$zip_file" ]; then
+                VALID_ZIPS+=("$zip_file")
               else
-                INVALID_FOLDERS+=("$folder")
+                INVALID_ZIPS+=("$zip_file")
               fi
             done
 
-            if [ ${#INVALID_FOLDERS[@]} -ne 0 ]; then
-              echo "⚠️ Warning: These APIs do not exist under 'apim/' and will be ignored: ${INVALID_FOLDERS[*]}"
+            if [ ${#INVALID_ZIPS[@]} -ne 0 ]; then
+              echo "⚠️ Warning: These ZIP files do not exist under 'apim/' and will be ignored: ${INVALID_ZIPS[*]}"
             fi
 
-            if [ ${#VALID_FOLDERS[@]} -eq 0 ]; then
-              echo "❌ No valid APIs found from input!"
+            if [ ${#VALID_ZIPS[@]} -eq 0 ]; then
+              echo "❌ No valid ZIP files found from input!"
               exit 1
             fi
 
-            # Join valid folders into a space-separated string
-            FOLDERS="${VALID_FOLDERS[*]}"
+            ZIP_FILES="${VALID_ZIPS[*]}"
           fi
 
-          echo "✅ APIs to process: $FOLDERS"
+          echo "✅ ZIP files to process: $ZIP_FILES"
 
           # Output for subsequent steps
           {
-            echo "folders<<EOF"
-            echo "$FOLDERS"
+            echo "zip_files<<EOF"
+            echo "$ZIP_FILES"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Use APIM folders
+      - name: Use ZIP files
         run: |
-          echo "Folders from previous step:"
-          echo "${{ steps.get_apis.outputs.folders }}"
+          echo "ZIP files from previous step:"
+          echo "${{ steps.get_apis.outputs.zip_files }}"
 
   loop-folders:
     runs-on: ubuntu-latest
