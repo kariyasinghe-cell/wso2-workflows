@@ -51,11 +51,15 @@ jobs:
           APIM_PATH="$GITHUB_WORKSPACE/apim"
           INPUT="${{ inputs.includeAPIs }}"
 
-          # Function to convert API name to zip filename
-          # to_zip() {
-          #   local api_name="$1"
-          #   echo "${api_name}.zip"
-          # }
+          to_zip() {
+            local api_name="$1"
+            # Check if input already ends with .zip
+            if [[ "$api_name" == *.zip ]]; then
+              echo "$api_name"
+            else
+              echo "${api_name}.zip"
+            fi
+          }
 
           if [ -z "$INPUT" ] && [ "${{ inputs.triggeredBy }}" == "developer" ]; then
             echo "❌ No input given from child workflow — stopping pipeline!"
